@@ -1,0 +1,239 @@
+---
+#Title - Descriptive Analytics Assignment 1
+#Name - Surbhi Khandelwal
+#Subject - Business Analytics
+---
+## Name - Surbhi Khandelwal
+## Subject - Descriptive Analytics
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+dir.create("images")
+```
+
+#Load all libraries
+```{r, comments=NA}
+library(readr)
+library(dplyr)
+library(ISLR)
+library(tidyverse)
+```
+
+#Read the csv Online_Retailer
+```{r file, comments=NA}
+mydata <- read.csv(file = "C:/Users/akash/Desktop/Kent - !st Sem/RPractice/Online_Retail.csv")
+
+```
+
+#Before we answer any questions, let's look at the data and try to understand it.
+```{r data, comments=NA}
+#Studying the structure of the data
+ 
+str(mydata)
+
+#Look at the head of the data
+head(mydata)
+
+#Look at the summary of the data set
+summary(mydata)
+```
+#Que 1 Show the breakdown of the number of transactions by countries i.e. how many transactions are in the dataset for each country (consider all records including cancelled transactions). Show this in total number and also in percentage. Show only countries accounting for more than 1% of the total transactions.
+
+```{r q1, comments=NA}
+
+transactions1 <- mydata %>% group_by(Country) %>% summarise(TotalTransactions = n(),PercentofTransactions = ((n()/nrow(mydata))*100)) %>% filter(PercentofTransactions>1)
+
+as.data.frame(transactions1)
+
+```
+
+#Que 2 - Create a new variable ‘TransactionValue’ that is the product of the exising ‘Quantity’ and ‘UnitPrice’ variables. Add this variable to the dataframe.
+
+```{r q2, comments=NA}
+mydata$TransactionValue <- mydata$Quantity*mydata$UnitPrice
+head(mydata)
+
+```
+
+#Que 3 Using the newly created variable, TransactionValue, show the breakdown of transaction values by countries i.e. how much money in total has been spent each country. Show this in total sum of transaction values. Show only countries with total transaction exceeding 130,000 British Pound.
+
+```{r q3, comments=NA}
+transactions3 <- mydata %>% group_by(Country) %>% summarise(TotalTransaction = sum(TransactionValue)) %>% filter(TotalTransaction>=130000)
+as.data.frame(transactions3)
+```
+
+#Que 4 The InvoiceDate Question
+
+```{r q4prep, comments=NA}
+#Let's convert the date variable from character to date format
+
+
+mydata$InvoiceDate_New <- strptime(mydata$InvoiceDate, "%m/%d/%Y %H:%M", tz='GMT')
+
+head(mydata$InvoiceDate_New)
+
+#Assigning the day if week value
+mydata$Invoice_Day_Week<- weekdays(mydata$InvoiceDate_New)
+
+unique(mydata$Invoice_Day_Week)
+
+#Not able to get the hour
+
+mydata$New_Invoice_Hour <- as.numeric(format(mydata$InvoiceDate_New, "%H"))
+
+head(mydata$New_Invoice_Hour)
+
+#Assigning the month of year
+
+mydata$New_Invoice_Month <- as.numeric(format(mydata$InvoiceDate_New, "%m"))
+
+unique(mydata$New_Invoice_Month)
+```
+
+
+
+#a) Show the percentage of transactions (by numbers) by days of the week
+
+```{r q4a, comments=NA}
+Transactions4a <- mydata %>% group_by(Invoice_Day_Week) %>% summarise(Transactionsperdayofweek= n(), PercentageTransactions = (n()/nrow(mydata))*100)
+as.data.frame(Transactions4a)
+```
+
+#b) Show the percentage of transactions (by transaction volume) by days of the week.
+
+```{r q4b, comments=NA}
+a<- sum(mydata$TransactionValue)
+a
+
+Transactions4b <- mydata %>% group_by(Invoice_Day_Week) %>% summarise(TransactionsbyVolume= sum(TransactionValue), PercentageTransactionsVolume = (TransactionsbyVolume/a)*100)
+as.data.frame(Transactions4b)
+```
+
+#c) Show the percentage of transactions (by transaction volume) by month of the year.
+
+```{r q4c, comments=NA}
+
+Transactions4c <- mydata %>% group_by(New_Invoice_Month) %>% summarise(TransactionsbyVolume= sum(TransactionValue), PercentageTransactionsVolume = (TransactionsbyVolume/a)*100)
+as.data.frame(Transactions4c)
+```
+
+#d) What was the date with the highest number of transactions from Australia?
+
+```{r q4d, comments=NA}
+
+Transactions4d <- mydata %>% filter(Country=="Australia") %>% group_by(InvoiceDate) %>% summarise(NoTransactions= n()) %>% arrange(desc(NoTransactions))
+Transactions4d
+
+head(mydata$InvoiceDate_New)
+```
+
+#e) The company needs to shut down the website for two consecutive hours for maintenance. What would be the hour of the day to start this so that the distribution is at minimum for the customers? The responsible IT team is available from 7:00 to 20:00 every day.
+
+```{r q4e, comments=NA}
+transactions4e <- mydata %>% filter(New_Invoice_Hour >=7 & New_Invoice_Hour<=20) %>% group_by(New_Invoice_Hour) %>% summarise( No.ofTransactions = n()) %>% arrange(No.ofTransactions)
+as.data.frame(transactions4e)
+
+#The best time to do any maintenance work would be 1800 - 2000 Hr.
+
+```
+
+#Que 5 Plot the histogram of transaction values from Germany. Use the hist() function to plot.
+
+```{r q5, comments=NA} 
+
+TransVal <- mydata %>% filter(Country=="Germany") 
+
+hist(TransVal$TransactionValue, n=20, main="Transaction Values for Germany",
+xlab="Transaction Value",
+xlim=c(-50,200),
+breaks=300)
+
+```
+
+#Que 6 Which customer had the highest number of transactions? Which customer is most valuable (i.e.highest total sum of transactions)?
+
+```{r q6, comments=NA}
+transactions6a <- mydata %>% group_by(CustomerID) %>% summarise( No.ofTransactions = n()) %>% arrange(desc(No.ofTransactions))
+as.data.frame(head(transactions6a))
+
+#The second part of the question:
+transactions6b <- mydata %>% group_by(CustomerID) %>% summarise(TotalTransaction = sum(TransactionValue)) %>% arrange(desc(TotalTransaction))
+as.data.frame(head(transactions6b))
+
+```
+#Que 7 Calculate the percentage of missing values for each variable in the dataset.
+
+```{r q7, comments=NA}
+Transactions7<- colMeans(is.na(mydata))*100
+as.data.frame(Transactions7)
+
+#Another way to do it is to calculate the sum of rows with na for each column like this:
+#nona<-sum(is.na(mydata$CustomerID))
+#perna<-nona/nrow(mydata)
+#perna
+```
+
+#Que 8 What are the number of transactions with missing CustomerID records by countries?
+```{r q8, comments=NA}
+transactions8 <- mydata %>% filter(is.na(CustomerID)) %>% group_by(Country) %>% summarise(TotalMissingCustomerID =n())
+as.data.frame(transactions8)
+
+#Just to check the missingness of data overall
+#install.packages('Amelia')
+library(Amelia)
+#visualize the missing data
+missmap(mydata)
+```
+
+#Que 9 On average, how often the costumers comeback to the website for their next shopping? (i.e. what is the average number of days between consecutive shopping) 
+```{r q9, comments=NA}
+#When we looked at the structure of dataset, we saw that the InvoiceDate is presented in char, let's convert this to date so we can use the diff function.
+
+mydata$InvoiceDate <- as.Date(mydata$InvoiceDate, "%m/%d/%Y")
+
+
+transactions9 <- mydata %>% group_by(CustomerID) %>%  summarise(LatestPurchase = max(InvoiceDate),OldestPurchase= min(InvoiceDate), Timediff= (LatestPurchase - OldestPurchase), AvgDaysBetweenShopping= Timediff/n())
+as.data.frame(head(transactions9))
+
+
+```
+
+#Que 10 In the retail sector, it is very important to understand the return rate of the goods purchased by customers. In this example, we can define this quantity, simply, as the ratio of the number of transactions cancelled (regardless of the transaction value) over the total number of transactions. With this definition, what is the return rate for the French customers? 
+
+```{r q10, comments=NA}
+
+TotalTransactions<- mydata %>% filter(Country=="France") %>% summarise(n())
+TotalTransactions
+
+CancelledTransactions <- mydata %>% filter(Country=="France" & Quantity <0) %>% summarise(n())
+CancelledTransactions
+
+ReturnRate <- (CancelledTransactions/TotalTransactions)*100
+as.data.frame(ReturnRate)
+```
+
+#Que 11 What is the product that has generated the highest revenue for the retailer? (i.e. item with the highest total sum of ‘TransactionValue’).
+
+```{r q11, comments=NA}
+
+#We can do this either using stock code or description. Let's first see with StockCode
+
+transactions11 <- mydata %>% group_by(StockCode) %>% summarise(TotalTransaction = sum(TransactionValue)) %>% arrange(desc(TotalTransaction))
+as.data.frame(head(transactions11))
+
+#Let's now see with Description
+
+transactions11a <- mydata %>% group_by(Description) %>% summarise(TotalTransaction = sum(TransactionValue)) %>% arrange(desc(TotalTransaction))
+as.data.frame(head(transactions11a))
+
+```
+
+#Que 12 How many unique customers are represented in the dataset? You can use unique() and length() functions
+
+```{r q12, comments=NA}
+
+transactions12 <- unique(mydata$CustomerID)
+length(transactions12)
+
+```
